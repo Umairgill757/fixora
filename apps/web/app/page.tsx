@@ -1,3 +1,5 @@
+import SiteHeader from "@/components/SiteHeader";
+
 const CATEGORIES = [
   { icon: "⚡", name: "Electricians", desc: "Wiring, switchboards, repairs", slug: "electrician" },
   { icon: "🔧", name: "Plumbers", desc: "Leaks, fittings, installations", slug: "plumber" },
@@ -17,27 +19,7 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <span className="text-xl font-extrabold tracking-tight">
-            ⚡ Fixora
-          </span>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-muted sm:flex">
-            <a href="#services" className="hover:text-foreground">Services</a>
-            <a href="#how" className="hover:text-foreground">How it works</a>
-            <a href="#pros" className="hover:text-foreground">For Pros</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <a href="/businesses" className="hidden text-sm font-semibold text-muted hover:text-foreground sm:inline">
-              Browse pros
-            </a>
-            <a href="#" className="text-sm font-semibold text-muted hover:text-foreground">Log in</a>
-            <a href="#" className="rounded-btn bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-dark">
-              Sign up
-            </a>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Hero */}
       <section className="mx-auto w-full max-w-6xl px-5 pt-14 pb-10 text-center sm:pt-20">

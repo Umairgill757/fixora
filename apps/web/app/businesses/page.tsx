@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getBusinesses } from "@/lib/api";
+import SiteHeader from "@/components/SiteHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +28,7 @@ export default async function BusinessesPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <Link href="/" className="text-xl font-extrabold tracking-tight">⚡ Fixora</Link>
-          <Link href="/" className="text-sm font-semibold text-muted hover:text-foreground">← Home</Link>
-        </div>
-      </header>
+      <SiteHeader compact />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10">
         <h1 className="text-3xl font-extrabold tracking-tight">

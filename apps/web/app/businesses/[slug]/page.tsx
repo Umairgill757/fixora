@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getBusiness } from "@/lib/api";
+import BookingForm from "@/components/BookingForm";
+import SiteHeader from "@/components/SiteHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +24,7 @@ export default async function BusinessDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <Link href="/" className="text-xl font-extrabold tracking-tight">⚡ Fixora</Link>
-          <Link href="/businesses" className="text-sm font-semibold text-muted hover:text-foreground">
-            ← All pros
-          </Link>
-        </div>
-      </header>
+      <SiteHeader compact />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-5 py-10">
         <div className="rounded-card border border-border bg-card p-8">
@@ -98,14 +92,14 @@ export default async function BusinessDetailPage({ params }: { params: Promise<{
           </>
         )}
 
-        <div id="book" className="rounded-card mt-8 bg-foreground p-8 text-center text-white">
-          <h2 className="text-xl font-extrabold">Get an instant AI quote</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-white/70">
-            Describe your problem and our AI will quote a fixed price with the next available slot.
+        <div id="book" className="rounded-card mt-8 border border-border bg-card p-8">
+          <h2 className="text-xl font-extrabold">Request a booking</h2>
+          <p className="mt-2 text-sm text-muted">
+            Pick a service and time — the business confirms your slot.
           </p>
-          <button className="rounded-btn mt-5 bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-dark">
-            Start AI quote →
-          </button>
+          <div className="mt-5">
+            <BookingForm business={business} />
+          </div>
         </div>
       </main>
     </div>
