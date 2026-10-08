@@ -1,10 +1,10 @@
 const CATEGORIES = [
-  { icon: "⚡", name: "Electricians", desc: "Wiring, switchboards, repairs" },
-  { icon: "🔧", name: "Plumbers", desc: "Leaks, fittings, installations" },
-  { icon: "🪚", name: "Carpenters", desc: "Furniture, doors, woodwork" },
-  { icon: "🎨", name: "Painters", desc: "Interior & exterior painting" },
-  { icon: "❄️", name: "AC Technicians", desc: "Service, repair, install" },
-  { icon: "🧹", name: "Cleaners", desc: "Home & deep cleaning" },
+  { icon: "⚡", name: "Electricians", desc: "Wiring, switchboards, repairs", slug: "electrician" },
+  { icon: "🔧", name: "Plumbers", desc: "Leaks, fittings, installations", slug: "plumber" },
+  { icon: "🪚", name: "Carpenters", desc: "Furniture, doors, woodwork", slug: "carpenter" },
+  { icon: "🎨", name: "Painters", desc: "Interior & exterior painting", slug: "painter" },
+  { icon: "❄️", name: "AC Technicians", desc: "Service, repair, install", slug: "ac-technician" },
+  { icon: "🧹", name: "Cleaners", desc: "Home & deep cleaning", slug: "cleaner" },
 ];
 
 const STEPS = [
@@ -28,6 +28,9 @@ export default function Home() {
             <a href="#pros" className="hover:text-foreground">For Pros</a>
           </nav>
           <div className="flex items-center gap-3">
+            <a href="/businesses" className="hidden text-sm font-semibold text-muted hover:text-foreground sm:inline">
+              Browse pros
+            </a>
             <a href="#" className="text-sm font-semibold text-muted hover:text-foreground">Log in</a>
             <a href="#" className="rounded-btn bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-dark">
               Sign up
@@ -63,7 +66,7 @@ export default function Home() {
         <h2 className="text-center text-2xl font-extrabold tracking-tight">What do you need fixed today?</h2>
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map((c) => (
-            <a key={c.name} href="#" className="rounded-card group border border-border bg-card p-5 text-center transition hover:-translate-y-1 hover:shadow-md">
+            <a key={c.name} href={`/businesses?category=${c.slug}`} className="rounded-card group border border-border bg-card p-5 text-center transition hover:-translate-y-1 hover:shadow-md">
               <div className="text-3xl">{c.icon}</div>
               <div className="mt-2 text-sm font-bold">{c.name}</div>
               <div className="mt-1 text-xs text-muted">{c.desc}</div>
