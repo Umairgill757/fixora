@@ -7,6 +7,7 @@ import {
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateDisputeDto, ResolveDisputeDto } from './dto/dispute.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 interface RequestUser {
   id: string;
@@ -17,7 +18,10 @@ const DISPUTABLE = [BookingStatus.PAID, BookingStatus.DISPATCHED, BookingStatus.
 
 @Injectable()
 export class DisputesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /** Customer opens a dispute; booking moves to DISPUTED. */
   async create(bookingId: string, dto: CreateDisputeDto, user: RequestUser) {
@@ -41,6 +45,17 @@ export class DisputesService {
         data: { status: BookingStatus.DISPUTED },
       }),
     ]);
+
+    void (async () => {
+      const full = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: { business: { include: { owner: true } } },
+      });
+      if (full?.business.owner) {
+        void this.notifications.disputeOpened(full.business.owner, bookingId, dto.reason);
+      }
+    })();
+
     return dispute;
   }
 
@@ -95,6 +110,7 @@ export class DisputesService {
             ]
           : []),
       ]);
+      void this.notifyCustomer(dispute.booking.customerId, 'refunded');
       return { ...dispute, status: 'refunded' };
     }
 
@@ -106,6 +122,12 @@ export class DisputesService {
         data: { status: BookingStatus.SETTLED },
       }),
     ]);
+    void this.notifyCustomer(dispute.booking.customerId, 'resolved');
     return { ...dispute, status: 'resolved' };
+  }
+
+  private async notifyCustomer(customerId: string, outcome: 'resolved' | 'refunded') {
+    const customer = await this.prisma.user.findUnique({ where: { id: customerId } });
+    if (customer) void this.notifications.disputeResolved(customer, outcome);
   }
 }

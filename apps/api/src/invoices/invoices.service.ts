@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 interface RequestUser {
   id: string;
@@ -14,7 +15,10 @@ interface RequestUser {
 
 @Injectable()
 export class InvoicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private commissionPct(): number {
     const n = Number(process.env.PLATFORM_COMMISSION_PCT ?? '10');
@@ -55,6 +59,14 @@ export class InvoicesService {
         data: { status: BookingStatus.INVOICED, commission },
       }),
     ]);
+
+    void (async () => {
+      const customer = await this.prisma.user.findUnique({ where: { id: booking.customerId } });
+      if (customer) {
+        void this.notifications.invoiceIssued(customer, amount, dueAt.toLocaleDateString(), invoice.id);
+      }
+    })();
+
     return invoice;
   }
 

@@ -9,13 +9,17 @@ import { BookingStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { JazzCashProvider } from './jazzcash.provider.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
   private readonly jazzcash = new JazzCashProvider();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * Start a JazzCash checkout for a QUOTED booking.
@@ -117,6 +121,17 @@ export class PaymentsService {
         }),
       ]);
       this.logger.log(`Booking ${payment.bookingId} marked PAID via JazzCash ${txnRefNo}`);
+
+      void (async () => {
+        const full = await this.prisma.booking.findUnique({
+          where: { id: payment.bookingId },
+          include: { customer: true, business: { select: { name: true } } },
+        });
+        if (full?.customer) {
+          void this.notifications.paymentSucceeded(full.customer, payment.amount, full.business.name);
+        }
+      })();
+
       return { ok: true };
     }
 

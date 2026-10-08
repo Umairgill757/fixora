@@ -8,6 +8,7 @@ import { BookingStatus, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ApplyTechnicianDto } from './dto/apply-technician.dto.js';
 import { UpdateTechnicianDto } from './dto/update-technician.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 interface RequestUser {
   id: string;
@@ -21,7 +22,10 @@ const TECH_INCLUDE = {
 
 @Injectable()
 export class TechniciansService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async apply(dto: ApplyTechnicianDto, user: RequestUser) {
     if (user.role !== 'TECHNICIAN') {
@@ -149,6 +153,15 @@ export class TechniciansService {
         data: { completedJobs: { increment: 1 } },
       }),
     ]);
+
+    void (async () => {
+      const full = await this.prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: { customer: true, business: { select: { name: true } } },
+      });
+      if (full?.customer) void this.notifications.jobCompleted(full.customer, full.business.name);
+    })();
+
     return updated;
   }
 }

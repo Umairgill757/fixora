@@ -7,6 +7,7 @@ import {
 import { BookingStatus, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 interface RequestUser {
   id: string;
@@ -40,7 +41,10 @@ const BOOKING_INCLUDE = {
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(dto: CreateBookingDto, user: RequestUser) {
     const business = await this.prisma.business.findUnique({ where: { id: dto.businessId } });
@@ -61,7 +65,7 @@ export class BookingsService {
 
     const totalPrice = service?.basePrice ?? null;
 
-    return this.prisma.booking.create({
+    const booking = await this.prisma.booking.create({
       data: {
         customerId: user.id,
         businessId: dto.businessId,
@@ -75,6 +79,19 @@ export class BookingsService {
       },
       include: BOOKING_INCLUDE,
     });
+
+    // Notify (fire-and-forget; failures never break booking creation).
+    void (async () => {
+      const [customer, owner] = await Promise.all([
+        this.prisma.user.findUnique({ where: { id: user.id } }),
+        this.prisma.business.findUnique({ where: { id: dto.businessId }, select: { owner: true, name: true } }),
+      ]);
+      const when = scheduledAt.toLocaleString();
+      if (customer) void this.notifications.bookingRequested(customer, business.name, when);
+      if (owner?.owner) void this.notifications.bookingConfirmedOwner(owner.owner, customer?.name ?? 'A customer', when);
+    })();
+
+    return booking;
   }
 
   async list(user: RequestUser) {
@@ -156,15 +173,32 @@ export class BookingsService {
     if (booking.status !== BookingStatus.DISPATCHED) {
       throw new BadRequestException(`Booking is ${booking.status}; only DISPATCHED bookings can be assigned.`);
     }
-    const tech = await this.prisma.technician.findUnique({ where: { id: technicianId } });
+    const tech = await this.prisma.technician.findUnique({
+      where: { id: technicianId },
+      include: { user: true },
+    });
     if (!tech || tech.verificationStatus !== VerificationStatus.VERIFIED) {
       throw new BadRequestException('Technician is not verified.');
     }
-    return this.prisma.booking.update({
+    const assigned = await this.prisma.booking.update({
       where: { id },
       data: { technicianId, status: BookingStatus.ASSIGNED },
       include: BOOKING_INCLUDE,
     });
+
+    void (async () => {
+      const customer = await this.prisma.user.findUnique({ where: { id: booking.customerId } });
+      if (customer) {
+        void this.notifications.technicianAssigned(
+          tech.user,
+          customer,
+          (booking.scheduledAt ?? new Date()).toLocaleString(),
+          booking.address,
+        );
+      }
+    })();
+
+    return assigned;
   }
 
   private assertVisible(

@@ -7,6 +7,7 @@ import {
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePayoutDto } from './dto/create-payout.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 interface RequestUser {
   id: string;
@@ -15,7 +16,10 @@ interface RequestUser {
 
 @Injectable()
 export class PayoutsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private commissionPct(): number {
     const n = Number(process.env.PLATFORM_COMMISSION_PCT ?? '10');
@@ -57,9 +61,18 @@ export class PayoutsService {
     if (dto.amount > payable) {
       throw new BadRequestException(`Amount exceeds payable balance (Rs ${payable}).`);
     }
-    return this.prisma.payout.create({
+    const payout = await this.prisma.payout.create({
       data: { technicianId: dto.technicianId, amount: dto.amount, status: 'processing' },
     });
+
+    void (async () => {
+      const techUser = await this.prisma.technician
+        .findUnique({ where: { id: dto.technicianId }, include: { user: true } })
+        .then((t) => t?.user);
+      if (techUser) void this.notifications.payoutCreated(techUser, dto.amount);
+    })();
+
+    return payout;
   }
 
   async markPaid(id: string, user: RequestUser) {
