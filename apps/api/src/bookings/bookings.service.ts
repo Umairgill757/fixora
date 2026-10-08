@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 
@@ -134,6 +134,35 @@ export class BookingsService {
     return this.prisma.booking.update({
       where: { id },
       data: { status },
+      include: BOOKING_INCLUDE,
+    });
+  }
+
+  /**
+   * Dispatch: assign a verified technician to a DISPATCHED booking.
+   * Only the business owner (or admin) can dispatch.
+   */
+  async assignTechnician(id: string, technicianId: string, user: RequestUser) {
+    const booking = await this.findOne(id, user);
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException('Only the business can dispatch technicians.');
+    }
+    if (user.role === 'BUSINESS_OWNER') {
+      const own = await this.prisma.business.findFirst({
+        where: { id: booking.businessId, ownerId: user.id },
+      });
+      if (!own) throw new ForbiddenException('Not your business booking.');
+    }
+    if (booking.status !== BookingStatus.DISPATCHED) {
+      throw new BadRequestException(`Booking is ${booking.status}; only DISPATCHED bookings can be assigned.`);
+    }
+    const tech = await this.prisma.technician.findUnique({ where: { id: technicianId } });
+    if (!tech || tech.verificationStatus !== VerificationStatus.VERIFIED) {
+      throw new BadRequestException('Technician is not verified.');
+    }
+    return this.prisma.booking.update({
+      where: { id },
+      data: { technicianId, status: BookingStatus.ASSIGNED },
       include: BOOKING_INCLUDE,
     });
   }

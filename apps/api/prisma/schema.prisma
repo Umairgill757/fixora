@@ -132,6 +132,7 @@ model Booking {
   payment Payment?
   invoice Invoice?
   reviews Review[]
+  disputes Dispute[]
 }
 
 model Quote {
@@ -198,6 +199,7 @@ model Payout {
 model Dispute {
   id        String   @id @default(cuid())
   bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
   reason    String
   status    String   @default("open")
   createdAt DateTime @default(now())

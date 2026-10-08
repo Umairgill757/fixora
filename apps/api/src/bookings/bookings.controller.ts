@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { BookingsService } from './bookings.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto.js';
+import { AssignTechnicianDto } from './dto/assign-technician.dto.js';
 
 @Controller('bookings')
 @UseGuards(AuthGuard('jwt'))
@@ -22,6 +23,15 @@ export class BookingsController {
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: { user: { id: string; role: string } }) {
     return this.bookings.findOne(id, req.user);
+  }
+
+  @Post(':id/assign')
+  assignTechnician(
+    @Param('id') id: string,
+    @Body() dto: AssignTechnicianDto,
+    @Req() req: { user: { id: string; role: string } },
+  ) {
+    return this.bookings.assignTechnician(id, dto.technicianId, req.user);
   }
 
   @Patch(':id/status')
