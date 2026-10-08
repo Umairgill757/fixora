@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 const TOKEN_KEY = 'fixora_token';
 
@@ -31,6 +31,20 @@ export function useRole(): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * True once the component has mounted on the client. Guards against the
+ * SSR hydration trap: useSyncExternalStore's server snapshot is null, so a
+ * "redirect when token is null" effect would fire on first render even for
+ * logged-in users. Wait for `ready` before redirecting.
+ */
+export function useAuthReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
+  return ready;
 }
 
 export function setToken(token: string) {

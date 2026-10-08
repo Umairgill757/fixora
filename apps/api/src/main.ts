@@ -8,7 +8,12 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
-  app.enableCors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000' });
+  // Allow a comma-separated list so localhost, 127.0.0.1 and LAN IPs all work.
+  const origins = (process.env.WEB_ORIGIN ?? 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: origins });
   app.setGlobalPrefix('v1');
   await app.listen(process.env.PORT ?? 3001);
 }

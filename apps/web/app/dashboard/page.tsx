@@ -15,7 +15,7 @@ import {
   type Business,
   type TechProfile,
 } from '@/lib/api';
-import { useToken } from '@/lib/auth';
+import { useToken, useAuthReady } from '@/lib/auth';
 import SiteHeader from '@/components/SiteHeader';
 
 const inputCls =
@@ -32,6 +32,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function OwnerDashboard() {
   const router = useRouter();
   const token = useToken();
+  const ready = useAuthReady();
   const [tab, setTab] = useState<'bookings' | 'services' | 'revenue'>('bookings');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -58,9 +59,10 @@ export default function OwnerDashboard() {
   }, [token]);
 
   useEffect(() => {
+    if (!ready) return;
     if (token === null) router.replace('/login');
     else load();
-  }, [token, router, load]);
+  }, [ready, token, router, load]);
 
   async function act(fn: () => Promise<unknown>, msg: string) {
     if (!token) return;

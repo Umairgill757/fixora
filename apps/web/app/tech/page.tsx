@@ -11,7 +11,7 @@ import {
   type Booking,
   type TechProfile,
 } from '@/lib/api';
-import { useToken } from '@/lib/auth';
+import { useToken, useAuthReady } from '@/lib/auth';
 import SiteHeader from '@/components/SiteHeader';
 
 const inputCls =
@@ -26,6 +26,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function TechPortal() {
   const router = useRouter();
   const token = useToken();
+  const ready = useAuthReady();
   const [profile, setProfile] = useState<TechProfile | null | undefined>(undefined);
   const [jobs, setJobs] = useState<Booking[]>([]);
   const [earnings, setEarnings] = useState<{ net: number; payable: number; paidOut: number; jobsSettled: number } | null>(null);
@@ -49,9 +50,10 @@ export default function TechPortal() {
   }, [token]);
 
   useEffect(() => {
+    if (!ready) return;
     if (token === null) router.replace('/login');
     else load();
-  }, [token, router, load]);
+  }, [ready, token, router, load]);
 
   async function onApply(e: React.FormEvent) {
     e.preventDefault();

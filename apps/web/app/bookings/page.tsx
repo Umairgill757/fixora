@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cancelBooking, getMyBookings, initiatePayment, openDispute, submitReview, type Booking } from '@/lib/api';
-import { useToken } from '@/lib/auth';
+import { useToken, useAuthReady } from '@/lib/auth';
 
 const STATUS_STYLE: Record<string, string> = {
   QUOTED: 'bg-amber-100 text-amber-800',
@@ -31,6 +31,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function MyBookingsPage() {
   const router = useRouter();
   const token = useToken();
+  const ready = useAuthReady();
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
@@ -50,12 +51,13 @@ export default function MyBookingsPage() {
   }, [token]);
 
   useEffect(() => {
+    if (!ready) return;
     if (token === null) {
       router.replace('/login');
       return;
     }
-    load();
-  }, [token, router, load]);
+    if (token) load();
+  }, [ready, token, router, load]);
 
   async function onCancel(id: string) {
     if (!token || !confirm('Cancel this booking?')) return;
@@ -117,7 +119,7 @@ export default function MyBookingsPage() {
     }
   }
 
-  if (bookings === null && !error) {
+  if (!ready || (bookings === null && !error)) {
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-12">
         <p className="text-neutral-500">Loading your bookings…</p>

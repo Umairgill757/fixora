@@ -11,7 +11,7 @@ import {
   adminResolveDispute,
   adminVerifyTechnician,
 } from '@/lib/api';
-import { useToken } from '@/lib/auth';
+import { useToken, useAuthReady } from '@/lib/auth';
 import SiteHeader from '@/components/SiteHeader';
 
 const inputCls =
@@ -22,6 +22,7 @@ type Tab = 'overview' | 'technicians' | 'disputes' | 'payouts' | 'users';
 export default function AdminPanel() {
   const router = useRouter();
   const token = useToken();
+  const ready = useAuthReady();
   const [tab, setTab] = useState<Tab>('overview');
   const [overview, setOverview] = useState<Record<string, unknown> | null>(null);
   const [rows, setRows] = useState<any[]>([]);
@@ -49,9 +50,10 @@ export default function AdminPanel() {
   }, [token, tab]);
 
   useEffect(() => {
+    if (!ready) return;
     if (token === null) router.replace('/login');
     else load();
-  }, [token, router, load]);
+  }, [ready, token, router, load]);
 
   async function act(fn: () => Promise<unknown>) {
     try {
