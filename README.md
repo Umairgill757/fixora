@@ -18,11 +18,11 @@ app/
 ## Quick start (local dev)
 
 ```bash
-pnpm install
+npm install
 # terminal 1 — API (http://localhost:3001)
-pnpm dev:api
+npm run dev:api
 # terminal 2 — Web (http://localhost:3000)
-pnpm dev:web
+npm run dev:web
 ```
 
 Local DB is SQLite (`apps/api/prisma/dev.db`, git-ignored). Production uses
