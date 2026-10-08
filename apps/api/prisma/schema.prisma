@@ -1,0 +1,200 @@
+// Prisma schema — AI-powered home-services marketplace.
+// Local dev: SQLite (zero setup). Production: PostgreSQL — same schema,
+// only the datasource url/provider changes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  TECHNICIAN
+  BUSINESS_OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  QUOTED
+  PAID
+  DISPATCHED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  INVOICED
+  SETTLED
+  CANCELLED
+  DISPUTED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  businesses   Business[]
+  technician   Technician?
+  bookings     Booking[]   @relation("CustomerBookings")
+  reviews      Review[]    @relation("AuthoredReviews")
+  quotes       Quote[]
+}
+
+model Business {
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  name        String
+  slug        String   @unique
+  description String?
+  city        String
+  // JSON arrays: ["DHA","Gulberg"], ["plumbing","electrical"]
+  serviceAreas String  @default("[]")
+  categories   String  @default("[]")
+  verified    Boolean  @default(false)
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services    Service[]
+  technicians Technician[]
+  bookings    Booking[]
+}
+
+model Technician {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id])
+  businessId         String?
+  business           Business?          @relation(fields: [businessId], references: [id])
+  skills             String             @default("[]") // JSON array
+  serviceAreas       String             @default("[]") // JSON array
+  verificationStatus VerificationStatus @default(PENDING)
+  rating             Float              @default(0)
+  completedJobs      Int                @default(0)
+  // JSON: {"mon":[["09:00","18:00"]], ...}
+  availability       String             @default("{}")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  bookings Booking[]
+  payouts  Payout[]
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  description String?
+  basePrice   Float
+  unit        String   @default("job") // job | hour | visit
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  bookings Booking[]
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  customerId   String
+  customer     User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id])
+  technicianId String?
+  technician   Technician?   @relation(fields: [technicianId], references: [id])
+  serviceId    String?
+  service      Service?      @relation(fields: [serviceId], references: [id])
+  status       BookingStatus @default(QUOTED)
+  scheduledAt  DateTime?
+  address      String
+  notes        String?
+  totalPrice   Float?
+  commission   Float?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  quote   Quote?
+  payment Payment?
+  invoice Invoice?
+  reviews Review[]
+}
+
+model Quote {
+  id           String   @id @default(cuid())
+  customerId   String
+  customer     User     @relation(fields: [customerId], references: [id])
+  bookingId    String?  @unique
+  booking      Booking? @relation(fields: [bookingId], references: [id])
+  description  String
+  estimatedLow Float?
+  estimatedHi  Float?
+  accepted     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Payment {
+  id                   String   @id @default(cuid())
+  bookingId            String   @unique
+  booking              Booking  @relation(fields: [bookingId], references: [id])
+  stripePaymentIntent  String?  @unique
+  amount               Float
+  currency             String   @default("pkr")
+  status               String   @default("pending")
+  createdAt            DateTime @default(now())
+}
+
+model Invoice {
+  id                String   @id @default(cuid())
+  bookingId         String   @unique
+  booking           Booking  @relation(fields: [bookingId], references: [id])
+  pdfUrl            String?
+  stripePaymentLink String?
+  amount            Float
+  status            String   @default("unpaid")
+  dueAt             DateTime?
+  createdAt         DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  authorId  String
+  author    User     @relation("AuthoredReviews", fields: [authorId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model Payout {
+  id               String     @id @default(cuid())
+  technicianId     String
+  technician       Technician @relation(fields: [technicianId], references: [id])
+  amount           Float
+  stripeTransferId String?    @unique
+  status           String     @default("pending")
+  createdAt        DateTime   @default(now())
+}
+
+model Dispute {
+  id        String   @id @default(cuid())
+  bookingId String
+  reason    String
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+}
