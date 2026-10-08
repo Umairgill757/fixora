@@ -1,0 +1,32 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env
+.env
+.env*.local
+
+# db
+*.db
+*.db-journal
+prisma/migrations/dev/
+
+# logs
+*.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+.vscode/
+.idea/
+
+# expo / mobile (phase 3)
+.expo/

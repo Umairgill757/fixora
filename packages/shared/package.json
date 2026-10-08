@@ -1,0 +1,1 @@
+{"description":"Shared TypeScript types for the marketplace monorepo","main":"src/index.ts","name":"@marketplace/shared","private":true,"types":"src/index.ts","version":"0.1.0"}
