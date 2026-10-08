@@ -19,11 +19,13 @@ cd apps/api
 copy .env.example .env        (Windows)
 # cp .env.example .env        (Mac/Linux)
 ```
-Open `.env` and set `JWT_SECRET` to any long random string.
+Open `.env` and fill in:
+- `DATABASE_URL` — your Neon connection string (from neon.tech dashboard)
+- `JWT_SECRET` — any long random string
 
-Then create the database and demo data:
+Then create the tables and demo data:
 ```
-npx prisma migrate dev
+npx prisma db push
 npx tsx prisma/seed.ts
 ```
 
