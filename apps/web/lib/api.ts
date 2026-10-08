@@ -129,3 +129,22 @@ export async function login(input: { email: string; password: string }) {
   }
   return res.json() as Promise<{ accessToken: string; refreshToken: string; user: AuthUser }>;
 }
+
+export interface PaymentCheckout {
+  gatewayUrl: string;
+  fields: Record<string, string>;
+  txnRefNo: string;
+  amount: number;
+}
+
+export async function initiatePayment(token: string, bookingId: string): Promise<PaymentCheckout> {
+  const res = await fetch(`${API_URL}/v1/payments/bookings/${bookingId}/pay`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? 'Payment initiation failed');
+  }
+  return res.json();
+}

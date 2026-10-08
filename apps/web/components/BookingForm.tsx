@@ -104,7 +104,7 @@ export default function BookingForm({ business }: { business: BusinessDetail }) 
         {busy ? 'Requesting…' : token ? 'Request booking' : 'Log in to book'}
       </button>
       <p className="text-center text-xs text-neutral-500">
-        The business confirms your slot. Payment is wired up next — no charge today.
+        The business confirms your slot. You can pay securely with JazzCash from My bookings.
       </p>
     </form>
   );

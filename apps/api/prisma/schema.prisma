@@ -152,10 +152,14 @@ model Payment {
   bookingId            String   @unique
   booking              Booking  @relation(fields: [bookingId], references: [id])
   stripePaymentIntent  String?  @unique
+  provider             String   @default("jazzcash")
+  providerTxnRef       String?  @unique
+  gatewayTxnId         String?
   amount               Float
   currency             String   @default("pkr")
   status               String   @default("pending")
   createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Invoice {

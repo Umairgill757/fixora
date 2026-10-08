@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { cancelBooking, getMyBookings, type Booking } from '@/lib/api';
+import { cancelBooking, getMyBookings, initiatePayment, type Booking } from '@/lib/api';
 import { useToken } from '@/lib/auth';
 
 const STATUS_STYLE: Record<string, string> = {
@@ -33,6 +33,7 @@ export default function MyBookingsPage() {
   const token = useToken();
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -58,6 +59,30 @@ export default function MyBookingsPage() {
       load();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Cancellation failed');
+    }
+  }
+
+  async function onPay(booking: Booking) {
+    if (!token) return;
+    setPayingId(booking.id);
+    try {
+      const checkout = await initiatePayment(token, booking.id);
+      // Auto-submit a hidden form to JazzCash's hosted checkout page.
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = checkout.gatewayUrl;
+      for (const [k, v] of Object.entries(checkout.fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Payment failed');
+      setPayingId(null);
     }
   }
 
@@ -114,6 +139,15 @@ export default function MyBookingsPage() {
             <div className="mt-4 flex flex-wrap items-center gap-3">
               {b.totalPrice != null && (
                 <span className="font-semibold">Rs {b.totalPrice.toLocaleString()}</span>
+              )}
+              {b.status === 'QUOTED' && (
+                <button
+                  onClick={() => onPay(b)}
+                  disabled={payingId === b.id}
+                  className="rounded-[15px] bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {payingId === b.id ? 'Redirecting…' : 'Pay with JazzCash'}
+                </button>
               )}
               {['QUOTED', 'PAID'].includes(b.status) && (
                 <button
