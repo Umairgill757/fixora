@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { clearToken, useToken } from '@/lib/auth';
+import { clearToken, useRole, useToken } from '@/lib/auth';
 
 export default function SiteHeader({ compact = false }: { compact?: boolean }) {
   const token = useToken();
+  const role = useRole();
 
   return (
     <header className="border-b border-border bg-card">
@@ -30,9 +31,26 @@ export default function SiteHeader({ compact = false }: { compact?: boolean }) {
           )}
           {token ? (
             <>
-              <Link href="/bookings" className="text-sm font-semibold text-muted hover:text-foreground">
-                My bookings
-              </Link>
+              {role === 'CUSTOMER' && (
+                <Link href="/bookings" className="text-sm font-semibold text-muted hover:text-foreground">
+                  My bookings
+                </Link>
+              )}
+              {role === 'BUSINESS_OWNER' && (
+                <Link href="/dashboard" className="text-sm font-semibold text-muted hover:text-foreground">
+                  Dashboard
+                </Link>
+              )}
+              {role === 'TECHNICIAN' && (
+                <Link href="/tech" className="text-sm font-semibold text-muted hover:text-foreground">
+                  My jobs
+                </Link>
+              )}
+              {role === 'ADMIN' && (
+                <Link href="/admin" className="text-sm font-semibold text-muted hover:text-foreground">
+                  Admin
+                </Link>
+              )}
               <button
                 onClick={() => clearToken()}
                 className="text-sm font-semibold text-muted hover:text-foreground"

@@ -60,6 +60,19 @@ export class BusinessesService {
     return businesses.map(present);
   }
 
+  async myBusinesses(user: RequestUser) {
+    if (user.role !== 'BUSINESS_OWNER' && user.role !== 'ADMIN') {
+      throw new ForbiddenException('Business owners only.');
+    }
+    const where = user.role === 'ADMIN' ? {} : { ownerId: user.id };
+    const businesses = await this.prisma.business.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { services: { where: { active: true } } },
+    });
+    return businesses.map(present);
+  }
+
   async findBySlug(slug: string) {
     const business = await this.prisma.business.findUnique({
       where: { slug },

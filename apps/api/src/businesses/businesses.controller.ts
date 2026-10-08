@@ -28,6 +28,12 @@ export class BusinessesController {
     return this.businesses.list({ city, category });
   }
 
+  @Get('mine')
+  @UseGuards(AuthGuard('jwt'))
+  myBusinesses(@Req() req: { user: { id: string; role: string } }) {
+    return this.businesses.myBusinesses(req.user);
+  }
+
   @Get(':slug')
   findBySlug(@Param('slug') slug: string) {
     return this.businesses.findBySlug(slug);

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { cancelBooking, getMyBookings, initiatePayment, type Booking } from '@/lib/api';
+import { cancelBooking, getMyBookings, initiatePayment, openDispute, submitReview, type Booking } from '@/lib/api';
 import { useToken } from '@/lib/auth';
 
 const STATUS_STYLE: Record<string, string> = {
@@ -34,6 +34,11 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [reviewFor, setReviewFor] = useState<string | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [disputeFor, setDisputeFor] = useState<string | null>(null);
+  const [disputeReason, setDisputeReason] = useState('');
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -62,6 +67,32 @@ export default function MyBookingsPage() {
     }
   }
 
+  async function onReview(id: string) {
+    if (!token) return;
+    try {
+      await submitReview(token, id, rating, comment || undefined);
+      setReviewFor(null);
+      setComment('');
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Review failed');
+    }
+  }
+
+  async function onDispute(id: string) {
+    if (!token || disputeReason.trim().length < 10) {
+      alert('Please describe the issue (at least 10 characters).');
+      return;
+    }
+    try {
+      await openDispute(token, id, disputeReason.trim());
+      setDisputeFor(null);
+      setDisputeReason('');
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Dispute failed');
+    }
+  }
   async function onPay(booking: Booking) {
     if (!token) return;
     setPayingId(booking.id);
@@ -157,6 +188,47 @@ export default function MyBookingsPage() {
                   Cancel
                 </button>
               )}
+              {['COMPLETED', 'INVOICED', 'SETTLED'].includes(b.status) &&
+                (reviewFor === b.id ? (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="rounded-[15px] border border-neutral-200 px-2 py-2 text-sm">
+                      {[5, 4, 3, 2, 1].map((n) => (
+                        <option key={n} value={n}>{n} ⭐</option>
+                      ))}
+                    </select>
+                    <input
+                      placeholder="Comment (optional)"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="rounded-[15px] border border-neutral-200 px-3 py-2 text-sm"
+                    />
+                    <button onClick={() => onReview(b.id)} className="rounded-[15px] bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">
+                      Submit
+                    </button>
+                  </span>
+                ) : (
+                  <button onClick={() => setReviewFor(b.id)} className="rounded-[15px] border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50">
+                    Leave a review
+                  </button>
+                ))}
+              {['PAID', 'DISPATCHED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'INVOICED'].includes(b.status) &&
+                (disputeFor === b.id ? (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <input
+                      placeholder="Describe the issue…"
+                      value={disputeReason}
+                      onChange={(e) => setDisputeReason(e.target.value)}
+                      className="rounded-[15px] border border-neutral-200 px-3 py-2 text-sm"
+                    />
+                    <button onClick={() => onDispute(b.id)} className="rounded-[15px] bg-orange-600 px-4 py-2 text-sm font-semibold text-white">
+                      Open dispute
+                    </button>
+                  </span>
+                ) : (
+                  <button onClick={() => setDisputeFor(b.id)} className="rounded-[15px] border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-500 hover:bg-neutral-50">
+                    Report issue
+                  </button>
+                ))}
             </div>
           </div>
         ))}

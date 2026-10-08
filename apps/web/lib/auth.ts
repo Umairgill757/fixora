@@ -22,6 +22,17 @@ export function useToken(): string | null {
   return useSyncExternalStore(subscribe, getToken, () => null);
 }
 
+export function useRole(): string | null {
+  const token = useToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function setToken(token: string) {
   window.localStorage.setItem(TOKEN_KEY, token);
   window.dispatchEvent(new Event('fixora:auth'));
