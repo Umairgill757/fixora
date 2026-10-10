@@ -31,7 +31,23 @@ async function getExpressApp(): Promise<ReqResHandler> {
   return cachedApp;
 }
 
-export default async function handler(req: unknown, res: unknown): Promise<void> {
-  const expressApp = await getExpressApp();
-  expressApp(req, res);
+export default function handler(req: unknown, res: unknown): void {
+  // NOTE: intentionally NOT async — Vercel waits for res.end() on a sync
+  // handler. An async handler whose promise resolves before Express finishes
+  // can get the invocation frozen early.
+  getExpressApp().then(
+    (expressApp) => expressApp(req, res),
+    (err) => {
+      console.error('Vercel handler bootstrap failed:', err);
+      const r = res as {
+        headersSent?: boolean;
+        statusCode?: number;
+        end?: (body: string) => void;
+      };
+      if (!r.headersSent && typeof r.end === 'function') {
+        r.statusCode = 500;
+        r.end('Internal Server Error');
+      }
+    },
+  );
 }
