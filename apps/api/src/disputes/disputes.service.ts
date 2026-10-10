@@ -14,7 +14,7 @@ interface RequestUser {
   role: string;
 }
 
-const DISPUTABLE = [BookingStatus.PAID, BookingStatus.DISPATCHED, BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS, BookingStatus.COMPLETED, BookingStatus.INVOICED];
+const DISPUTABLE: BookingStatus[] = [BookingStatus.PAID, BookingStatus.DISPATCHED, BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS, BookingStatus.COMPLETED, BookingStatus.INVOICED];
 
 @Injectable()
 export class DisputesService {

@@ -13,7 +13,7 @@ interface RequestUser {
   role: string;
 }
 
-const REVIEWABLE = [BookingStatus.COMPLETED, BookingStatus.INVOICED, BookingStatus.SETTLED];
+const REVIEWABLE: BookingStatus[] = [BookingStatus.COMPLETED, BookingStatus.INVOICED, BookingStatus.SETTLED];
 
 @Injectable()
 export class ReviewsService {
