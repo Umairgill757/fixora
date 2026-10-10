@@ -1,39 +1,37 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { configure as serverlessExpress } from '@vendia/serverless-express';
 import { AppModule } from './app.module.js';
 
 /**
- * Vercel serverless entry point. The same NestJS app, wrapped so it runs
- * as a serverless function instead of a long-lived process.
- * Local dev (`nest start`) is untouched — this file is only used on Vercel.
+ * Vercel serverless entry point. The same NestJS app, but instead of
+ * `app.listen()` (long-lived process) the underlying Express instance
+ * handles each invocation's (req, res) directly — the native Vercel
+ * serverless pattern. Local dev (`nest start`) is untouched.
  */
 
-let cachedHandler: ((event: unknown, context: unknown) => Promise<unknown>) | null = null;
+type ReqResHandler = (req: unknown, res: unknown) => void;
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-  );
-  const origins = (process.env.WEB_ORIGIN ?? '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-  app.enableCors({ origin: origins });
-  app.setGlobalPrefix('v1');
-  await app.init();
-  const expressApp = app.getHttpAdapter().getInstance();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return serverlessExpress({ app: expressApp }) as (
-    event: unknown,
-    context: unknown,
-  ) => Promise<unknown>;
+let cachedApp: ReqResHandler | null = null;
+
+async function getExpressApp(): Promise<ReqResHandler> {
+  if (!cachedApp) {
+    const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    );
+    const origins = (process.env.WEB_ORIGIN ?? '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
+    app.enableCors({ origin: origins });
+    app.setGlobalPrefix('v1');
+    await app.init();
+    cachedApp = app.getHttpAdapter().getInstance() as ReqResHandler;
+  }
+  return cachedApp;
 }
 
-export default async function handler(event: unknown, context: unknown) {
-  if (!cachedHandler) {
-    cachedHandler = await bootstrap();
-  }
-  return cachedHandler(event, context);
+export default async function handler(req: unknown, res: unknown): Promise<void> {
+  const expressApp = await getExpressApp();
+  expressApp(req, res);
 }
